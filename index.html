@@ -19,6 +19,9 @@
       --border-subtle: oklch(100% 0 0 / 0.08);
       --primary: oklch(65% 0.18 145);
       --primary-hover: oklch(60% 0.18 145);
+      --edit-color: oklch(75% 0.16 85);
+      --edit-hover: oklch(70% 0.16 85);
+      --accent: oklch(75% 0.15 240);
     }
 
     * {
@@ -52,7 +55,7 @@
 
     .container {
       width: 100%;
-      max-width: 460px;
+      max-width: 480px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -66,8 +69,34 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
       box-shadow: 0 16px 36px oklch(0% 0 0 / 0.45);
+      position: relative;
+    }
+
+    .edit-banner {
+      display: none;
+      width: 100%;
+      background: oklch(30% 0.08 85);
+      border: 1px solid var(--edit-color);
+      color: var(--edit-color);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .edit-banner.active { display: flex; }
+
+    .cancel-edit-btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: underline;
     }
 
     /* Contador */
@@ -75,7 +104,7 @@
       --b: 76px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 6px;
       border-radius: calc(var(--b) * 0.32);
       background: oklch(21% 0 0);
@@ -117,7 +146,7 @@
       position: relative;
       cursor: ns-resize;
       user-select: none;
-      padding: 0 14px;
+      padding: 0 12px;
       border-radius: calc(var(--b) * 0.24);
       touch-action: none;
     }
@@ -141,12 +170,23 @@
 
     .reel-window {
       display: flex;
-      font-size: calc(var(--b) * 0.65);
+      align-items: baseline;
+      font-size: calc(var(--b) * 0.62);
       font-weight: 600;
       line-height: 1;
       height: 1.2em;
       overflow: hidden;
       mask: linear-gradient(transparent, black 20%, black 80%, transparent);
+    }
+
+    .decimal-separator {
+      font-size: calc(var(--b) * 0.62);
+      line-height: 1;
+      width: 0.28em;
+      text-align: center;
+      overflow: hidden;
+      opacity: 1;
+      transition: width 200ms ease, opacity 150ms ease;
     }
 
     .currency-suffix {
@@ -160,11 +200,11 @@
       width: 0.62em;
       height: 1.2em;
       overflow: hidden;
-      transition: width 220ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 150ms ease;
+      transition: width 200ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 150ms ease;
       opacity: 1;
     }
 
-    .reel.hidden {
+    .reel.hidden, .decimal-separator.hidden {
       width: 0 !important;
       opacity: 0 !important;
       pointer-events: none;
@@ -184,6 +224,70 @@
       width: 100%;
     }
 
+    /* Toggle Switch cent. */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: oklch(18% 0 0);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: oklch(30% 0 0);
+      transition: 200ms cubic-bezier(0.2, 0.9, 0.25, 1);
+      border-radius: 999px;
+    }
+
+    .slider::before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 200ms cubic-bezier(0.2, 0.9, 0.25, 1);
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(16px);
+      background-color: oklch(15% 0 0);
+    }
+
+    /* Campos de Entrada */
     .form-group {
       width: 100%;
       display: flex;
@@ -232,9 +336,14 @@
       transition: background-color 150ms, transform 100ms;
     }
 
+    .btn-submit.editing {
+      background: var(--edit-color);
+    }
+
     .btn-submit:active { transform: scale(0.97); }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
+    /* Tabela */
     .table-card {
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
@@ -282,9 +391,37 @@
     td {
       padding: 12px 0;
       border-bottom: 1px solid oklch(100% 0 0 / 0.04);
+      vertical-align: middle;
     }
 
     td.val-col, th.val-col { text-align: right; }
+    td.action-col, th.action-col { text-align: center; width: 44px; }
+
+    .btn-row-edit {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 150ms, color 150ms;
+    }
+
+    .btn-row-edit:hover {
+      background: oklch(100% 0 0 / 0.08);
+      color: var(--edit-color);
+    }
+
+    .btn-row-edit svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
 
     .empty-row {
       text-align: center;
@@ -297,7 +434,12 @@
 
   <div class="container">
     <div class="form-card">
+      <div class="edit-banner" id="edit-banner">
+        <span>A editar lançamento</span>
+        <button type="button" class="cancel-edit-btn" id="btn-cancel-edit">Cancelar</button>
+      </div>
       
+      <!-- Contador -->
       <div class="counter" role="group">
         <button type="button" class="step-btn" id="btn-minus" aria-label="Diminuir">
           <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
@@ -305,9 +447,15 @@
 
         <div class="value-display" id="dial">
           <div class="reel-window">
+            <!-- Parte Inteira -->
             <div class="reel hidden" id="reel-h"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
             <div class="reel hidden" id="reel-t"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
             <div class="reel" id="reel-u"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+            
+            <!-- Separador decimal e Cêntimos -->
+            <span class="decimal-separator hidden" id="sep-dec">,</span>
+            <div class="reel hidden" id="reel-c1"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+            <div class="reel hidden" id="reel-c2"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
           </div>
           <span class="currency-suffix">€</span>
         </div>
@@ -317,6 +465,16 @@
         </button>
       </div>
 
+      <!-- Toggle Switch "cent." -->
+      <label class="toggle-row" for="toggle-cent">
+        <span class="toggle-label">cent.</span>
+        <div class="switch">
+          <input type="checkbox" id="toggle-cent">
+          <span class="slider"></span>
+        </div>
+      </label>
+
+      <!-- Descrição -->
       <div class="form-group">
         <label for="desc-input">Descrição</label>
         <input type="text" id="desc-input" placeholder="ex: Abastecimento" autocomplete="off" enterkeyhint="done">
@@ -327,10 +485,11 @@
       </button>
     </div>
 
+    <!-- Tabela -->
     <div class="table-card">
       <div class="table-header">
         <h3>Lançamentos Locais</h3>
-        <span class="total-badge">Total: <b id="total-val">0 €</b></span>
+        <span class="total-badge">Total: <b id="total-val">0,00 €</b></span>
       </div>
       <table>
         <thead>
@@ -338,53 +497,88 @@
             <th>Hora</th>
             <th>Descrição</th>
             <th class="val-col">Valor</th>
+            <th class="action-col"></th>
           </tr>
         </thead>
         <tbody id="table-body">
           <tr id="empty-state">
-            <td colspan="3" class="empty-row">Nenhum registo inserido nesta sessão.</td>
+            <td colspan="4" class="empty-row">Nenhum registo inserido nesta sessão.</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
-<script>
+
+  <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW_fDoLM7GmCC3diFBYS08quj5lOImiRVZJ7agx6T48Xesmw5Uq9S4trXIG1V1LGXr/exec';
     const STORAGE_KEY = 'despesas_locais_cache';
 
-    let currentValue = 15;
-    const MIN_VAL = 0;
-    const MAX_VAL = 999;
-    
-    // 1. Carrega o histórico salvo no telemóvel/navegador ao abrir a página
+    let currentValue = 30.00;
+    const MIN_VAL = 0.00;
+    const MAX_VAL = 999.95;
+    let editingId = null;
+
     let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+    const toggleCent = document.getElementById('toggle-cent');
+    const sepDec = document.getElementById('sep-dec');
 
     const reelH = document.querySelector('#reel-h .strip');
     const reelT = document.querySelector('#reel-t .strip');
     const reelU = document.querySelector('#reel-u .strip');
+    const reelC1 = document.querySelector('#reel-c1 .strip');
+    const reelC2 = document.querySelector('#reel-c2 .strip');
+
     const wrapH = document.getElementById('reel-h');
     const wrapT = document.getElementById('reel-t');
+    const wrapC1 = document.getElementById('reel-c1');
+    const wrapC2 = document.getElementById('reel-c2');
+
+    function getStep() {
+      return toggleCent.checked ? 0.05 : 1.0;
+    }
 
     function renderReels(val) {
-      const h = Math.floor(val / 100);
-      const t = Math.floor((val % 100) / 10);
-      const u = val % 10;
+      const fixedVal = Number(val.toFixed(2));
+      const intPart = Math.floor(fixedVal);
+      const decPart = Math.round((fixedVal - intPart) * 100);
+
+      const h = Math.floor(intPart / 100);
+      const t = Math.floor((intPart % 100) / 10);
+      const u = intPart % 10;
+
+      const c1 = Math.floor(decPart / 10);
+      const c2 = decPart % 10;
 
       if (reelH) reelH.style.transform = `translateY(-${h * 1.2}em)`;
       if (reelT) reelT.style.transform = `translateY(-${t * 1.2}em)`;
       if (reelU) reelU.style.transform = `translateY(-${u * 1.2}em)`;
+      if (reelC1) reelC1.style.transform = `translateY(-${c1 * 1.2}em)`;
+      if (reelC2) reelC2.style.transform = `translateY(-${c2 * 1.2}em)`;
 
-      if (wrapH) wrapH.classList.toggle('hidden', val < 100);
-      if (wrapT) wrapT.classList.toggle('hidden', val < 10);
+      if (wrapH) wrapH.classList.toggle('hidden', intPart < 100);
+      if (wrapT) wrapT.classList.toggle('hidden', intPart < 10);
+
+      const showCent = toggleCent.checked;
+      if (sepDec) sepDec.classList.toggle('hidden', !showCent);
+      if (wrapC1) wrapC1.classList.toggle('hidden', !showCent);
+      if (wrapC2) wrapC2.classList.toggle('hidden', !showCent);
     }
 
     function setValue(val) {
-      currentValue = Math.min(MAX_VAL, Math.max(MIN_VAL, val));
+      let rounded = Number(val.toFixed(2));
+      if (!toggleCent.checked) {
+        rounded = Math.round(rounded);
+      }
+      currentValue = Math.min(MAX_VAL, Math.max(MIN_VAL, rounded));
       renderReels(currentValue);
     }
 
-    // Suporte híbrido robusto para cliques rápidos e pressão contínua
-    function setupCounterButton(btnId, step) {
+    toggleCent.addEventListener('change', () => {
+      setValue(currentValue);
+    });
+
+    function setupCounterButton(btnId, direction) {
       const btn = document.getElementById(btnId);
       if (!btn) return;
 
@@ -393,14 +587,14 @@
       let isHold = false;
 
       const stepOnce = () => {
-        setValue(currentValue + step);
+        setValue(currentValue + (direction * getStep()));
       };
 
       const startHold = () => {
         isHold = false;
         timer = setTimeout(() => {
           isHold = true;
-          interval = setInterval(stepOnce, 80);
+          interval = setInterval(stepOnce, 70);
         }, 300);
       };
 
@@ -438,8 +632,9 @@
 
         const onMove = (ev) => {
           const delta = startY - ev.clientY;
-          const stepChange = Math.round(delta / 12);
-          setValue(initialVal + stepChange);
+          const pixelSensitivity = toggleCent.checked ? 6 : 12;
+          const stepsCount = Math.round(delta / pixelSensitivity);
+          setValue(initialVal + (stepsCount * getStep()));
         };
 
         const onUp = (ev) => {
@@ -453,14 +648,21 @@
       });
     }
 
-    // Gestão de envio e tabela
     const descInput = document.getElementById('desc-input');
     const btnSubmit = document.getElementById('btn-submit');
     const btnText = document.getElementById('btn-text');
     const tableBody = document.getElementById('table-body');
     const totalDisplay = document.getElementById('total-val');
+    const editBanner = document.getElementById('edit-banner');
+    const btnCancelEdit = document.getElementById('btn-cancel-edit');
 
-    // 2. Função que renderiza a tabela mantendo os dados persistidos
+    function formatCurrency(val) {
+      return Number(val).toLocaleString('pt-PT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + ' €';
+    }
+
     function renderSavedTable() {
       if (!tableBody) return;
       tableBody.innerHTML = '';
@@ -468,77 +670,134 @@
       if (records.length === 0) {
         tableBody.innerHTML = `
           <tr id="empty-state">
-            <td colspan="3" class="empty-row">Nenhum registo inserido nesta sessão.</td>
+            <td colspan="4" class="empty-row">Nenhum registo inserido nesta sessão.</td>
           </tr>
         `;
-        if (totalDisplay) totalDisplay.textContent = '0 €';
+        if (totalDisplay) totalDisplay.textContent = '0,00 €';
         return;
       }
 
       records.forEach(item => {
+        if (!item.id) item.id = 'id_' + Date.now() + Math.random().toString(36).substring(2, 6);
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="color: var(--text-muted);">${item.time}</td>
           <td>${item.desc}</td>
-          <td class="val-col"><b>${item.val} €</b></td>
+          <td class="val-col"><b>${formatCurrency(item.val)}</b></td>
+          <td class="action-col">
+            <button type="button" class="btn-row-edit" title="Editar registo" onclick="startEditing('${item.id}')">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </td>
         `;
         tableBody.appendChild(tr);
       });
 
-      const total = records.reduce((acc, cur) => acc + cur.val, 0);
-      if (totalDisplay) totalDisplay.textContent = `${total} €`;
+      const total = records.reduce((acc, cur) => acc + Number(cur.val || 0), 0);
+      if (totalDisplay) totalDisplay.textContent = formatCurrency(total);
     }
 
-    async function addRecord() {
+    window.startEditing = function(id) {
+      const record = records.find(r => r.id === id);
+      if (!record) return;
+
+      editingId = id;
+      descInput.value = record.desc;
+
+      // Se tiver cêntimos, ativa o toggle automaticamente
+      const hasCents = (Number(record.val) % 1) !== 0;
+      toggleCent.checked = hasCents;
+
+      setValue(Number(record.val));
+
+      editBanner.classList.add('active');
+      btnSubmit.classList.add('editing');
+      btnText.textContent = 'Guardar Alteração';
+      descInput.focus();
+    };
+
+    function cancelEditing() {
+      editingId = null;
+      descInput.value = '';
+      editBanner.classList.remove('active');
+      btnSubmit.classList.remove('editing');
+      btnText.textContent = 'Adicionar Registo';
+    }
+
+    btnCancelEdit.addEventListener('click', cancelEditing);
+
+    async function handleSave() {
       const desc = descInput.value.trim() || 'Sem descrição';
-      const val = currentValue;
+      const val = Number(currentValue.toFixed(2));
 
-      if (btnSubmit) btnSubmit.disabled = true;
-      if (btnText) btnText.textContent = 'A guardar...';
+      btnSubmit.disabled = true;
+      btnText.textContent = 'A processar...';
 
-      // Envio assíncrono para o Google Sheets
-      if (SCRIPT_URL) {
-        const formData = new URLSearchParams();
-        formData.append('descricao', desc);
-        formData.append('valor', val);
+      if (editingId) {
+        const targetId = editingId;
 
-        fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: formData.toString()
-        }).catch(err => console.error('Erro de rede:', err));
+        if (SCRIPT_URL) {
+          const formData = new URLSearchParams();
+          formData.append('action', 'edit');
+          formData.append('id', targetId);
+          formData.append('descricao', desc);
+          formData.append('valor', val);
+
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          }).catch(err => console.error('Erro na edição:', err));
+        }
+
+        const item = records.find(r => r.id === targetId);
+        if (item) {
+          item.desc = desc;
+          item.val = val;
+        }
+
+        cancelEditing();
+      } else {
+        const newId = 'id_' + Date.now();
+
+        if (SCRIPT_URL) {
+          const formData = new URLSearchParams();
+          formData.append('action', 'create');
+          formData.append('id', newId);
+          formData.append('descricao', desc);
+          formData.append('valor', val);
+
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          }).catch(err => console.error('Erro no envio:', err));
+        }
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        records.unshift({ id: newId, time: timeStr, desc: desc, val: val });
+
+        descInput.value = '';
+        btnText.textContent = 'Adicionar Registo';
       }
 
-      // Guarda localmente com hora atual
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      records.unshift({ time: timeStr, desc: desc, val: val });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-
-      // Atualiza a tabela na tela
       renderSavedTable();
-
-      // Reset do formulário
-      descInput.value = '';
-      if (btnSubmit) btnSubmit.disabled = false;
-      if (btnText) btnText.textContent = 'Adicionar Registo';
+      btnSubmit.disabled = false;
       descInput.focus();
     }
 
-    if (btnSubmit) btnSubmit.addEventListener('click', addRecord);
-    if (descInput) {
-      descInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') addRecord();
-      });
-    }
+    btnSubmit.addEventListener('click', handleSave);
+    descInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSave();
+    });
 
-    // Inicialização da página
     setValue(currentValue);
     renderSavedTable();
   </script>
-
 </body>
 </html>
