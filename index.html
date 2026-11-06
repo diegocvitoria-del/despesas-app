@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1b1b1b">
+  <title>Registo de Despesas</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-page: oklch(19.5% 0 0);
+      --card-bg: oklch(23.5% 0 0);
+      --btn-bg: oklch(30% 0 0);
+      --btn-hover: oklch(35% 0 0);
+      --text-main: oklch(97% 0 0);
+      --text-muted: oklch(70% 0 0);
+      --border-subtle: oklch(100% 0 0 / 0.08);
+      --primary: oklch(65% 0.18 145);
+      --primary-hover: oklch(60% 0.18 145);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: oklch(100% 0 0 / 0.035);
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='200'%3E%3Cpath d='M3-10C0-10-.6-8.6-.6-6.4V-2.4C-.6-1.1-1.4-.2-3 0-1.4.2-.6 1.1-.6 2.4V6.4C-.6 8.6 0 10 3 10' stroke='black' stroke-width='1.5' fill='none' transform='translate(22 26) rotate(-8)'/%3E%3Cpath d='M-3-10C0-10 .6-8.6 .6-6.4V-2.4C.6-1.1 1.4-.2 3 0 1.4.2.6 1.1.6 2.4V6.4C.6 8.6 0 10-3 10' stroke='black' stroke-width='1.5' fill='none' transform='translate(40 26) rotate(-8)'/%3E%3C/svg%3E") repeat;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 16px 36px oklch(0% 0 0 / 0.45);
+    }
+
+    /* Contador */
+    .counter {
+      --b: 76px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px;
+      border-radius: calc(var(--b) * 0.32);
+      background: oklch(21% 0 0);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .step-btn {
+      width: var(--b);
+      height: var(--b);
+      border: none;
+      border-radius: calc(var(--b) * 0.24);
+      background: var(--btn-bg);
+      color: var(--text-main);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      transition: background-color 150ms, transform 100ms;
+    }
+
+    .step-btn:active { transform: scale(0.92); }
+
+    .step-btn svg {
+      width: 28px;
+      height: 28px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .value-display {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: calc(var(--b) * 1.5);
+      height: var(--b);
+      position: relative;
+      cursor: ns-resize;
+      user-select: none;
+      padding: 0 14px;
+      border-radius: calc(var(--b) * 0.24);
+      touch-action: none;
+    }
+
+    .value-display::before,
+    .value-display::after {
+      content: "";
+      position: absolute;
+      top: 15%;
+      bottom: 15%;
+      width: 5px;
+      background: repeating-linear-gradient(
+        oklch(100% 0 0 / 0.4) 0 1.5px,
+        transparent 1.5px 8px
+      );
+      mask: linear-gradient(transparent, black 30%, black 70%, transparent);
+      opacity: 0.4;
+    }
+    .value-display::before { left: 4px; }
+    .value-display::after { right: 4px; }
+
+    .reel-window {
+      display: flex;
+      font-size: calc(var(--b) * 0.65);
+      font-weight: 600;
+      line-height: 1;
+      height: 1.2em;
+      overflow: hidden;
+      mask: linear-gradient(transparent, black 20%, black 80%, transparent);
+    }
+
+    .currency-suffix {
+      font-size: calc(var(--b) * 0.35);
+      color: var(--text-muted);
+      margin-left: 6px;
+      align-self: center;
+    }
+
+    .reel {
+      width: 0.62em;
+      height: 1.2em;
+      overflow: hidden;
+      transition: width 220ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 150ms ease;
+      opacity: 1;
+    }
+
+    .reel.hidden {
+      width: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    .strip {
+      display: flex;
+      flex-direction: column;
+      transition: transform 300ms cubic-bezier(0.2, 0.9, 0.25, 1);
+      width: 0.62em;
+    }
+
+    .strip span {
+      height: 1.2em;
+      display: grid;
+      place-items: center;
+      width: 100%;
+    }
+
+    .form-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: oklch(18% 0 0);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 15px 16px;
+      color: var(--text-main);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 150ms;
+    }
+
+    input[type="text"]:focus {
+      border-color: oklch(70% 0 0);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: oklch(15% 0 0);
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 150ms, transform 100ms;
+    }
+
+    .btn-submit:active { transform: scale(0.97); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 10px 25px oklch(0% 0 0 / 0.2);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .table-header h3 {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .total-badge {
+      font-size: 13px;
+      background: oklch(100% 0 0 / 0.08);
+      padding: 4px 10px;
+      border-radius: 999px;
+      color: var(--text-muted);
+    }
+
+    .total-badge b { color: var(--text-main); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    td {
+      padding: 12px 0;
+      border-bottom: 1px solid oklch(100% 0 0 / 0.04);
+    }
+
+    td.val-col, th.val-col { text-align: right; }
+
+    .empty-row {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="form-card">
+      
+      <div class="counter" role="group">
+        <button type="button" class="step-btn" id="btn-minus" aria-label="Diminuir">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+        </button>
+
+        <div class="value-display" id="dial">
+          <div class="reel-window">
+            <div class="reel hidden" id="reel-h"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+            <div class="reel hidden" id="reel-t"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+            <div class="reel" id="reel-u"><div class="strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div></div>
+          </div>
+          <span class="currency-suffix">€</span>
+        </div>
+
+        <button type="button" class="step-btn" id="btn-plus" aria-label="Aumentar">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="desc-input">Descrição</label>
+        <input type="text" id="desc-input" placeholder="ex: Abastecimento" autocomplete="off" enterkeyhint="done">
+      </div>
+
+      <button type="button" class="btn-submit" id="btn-submit">
+        <span id="btn-text">Adicionar Registo</span>
+      </button>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h3>Lançamentos Locais</h3>
+        <span class="total-badge">Total: <b id="total-val">0 €</b></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Descrição</th>
+            <th class="val-col">Valor</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr id="empty-state">
+            <td colspan="3" class="empty-row">Nenhum registo inserido nesta sessão.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW_fDoLM7GmCC3diFBYS08quj5lOImiRVZJ7agx6T48Xesmw5Uq9S4trXIG1V1LGXr/exec';
+    const STORAGE_KEY = 'despesas_locais_cache';
+
+    let currentValue = 15;
+    const MIN_VAL = 0;
+    const MAX_VAL = 999;
+    
+    // 1. Carrega o histórico salvo no telemóvel/navegador ao abrir a página
+    let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+    const reelH = document.querySelector('#reel-h .strip');
+    const reelT = document.querySelector('#reel-t .strip');
+    const reelU = document.querySelector('#reel-u .strip');
+    const wrapH = document.getElementById('reel-h');
+    const wrapT = document.getElementById('reel-t');
+
+    function renderReels(val) {
+      const h = Math.floor(val / 100);
+      const t = Math.floor((val % 100) / 10);
+      const u = val % 10;
+
+      if (reelH) reelH.style.transform = `translateY(-${h * 1.2}em)`;
+      if (reelT) reelT.style.transform = `translateY(-${t * 1.2}em)`;
+      if (reelU) reelU.style.transform = `translateY(-${u * 1.2}em)`;
+
+      if (wrapH) wrapH.classList.toggle('hidden', val < 100);
+      if (wrapT) wrapT.classList.toggle('hidden', val < 10);
+    }
+
+    function setValue(val) {
+      currentValue = Math.min(MAX_VAL, Math.max(MIN_VAL, val));
+      renderReels(currentValue);
+    }
+
+    // Suporte híbrido robusto para cliques rápidos e pressão contínua
+    function setupCounterButton(btnId, step) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+
+      let timer = null;
+      let interval = null;
+      let isHold = false;
+
+      const stepOnce = () => {
+        setValue(currentValue + step);
+      };
+
+      const startHold = () => {
+        isHold = false;
+        timer = setTimeout(() => {
+          isHold = true;
+          interval = setInterval(stepOnce, 80);
+        }, 300);
+      };
+
+      const endHold = () => {
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
+
+      btn.addEventListener('pointerdown', startHold);
+      btn.addEventListener('pointerup', endHold);
+      btn.addEventListener('pointerleave', endHold);
+      btn.addEventListener('pointercancel', endHold);
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!isHold) {
+          stepOnce();
+        }
+      });
+    }
+
+    setupCounterButton('btn-minus', -1);
+    setupCounterButton('btn-plus', 1);
+
+    // Arrastar dial verticalmente
+    const dial = document.getElementById('dial');
+    if (dial) {
+      let startY = 0;
+      let initialVal = 0;
+
+      dial.addEventListener('pointerdown', (e) => {
+        startY = e.clientY;
+        initialVal = currentValue;
+        dial.setPointerCapture(e.pointerId);
+
+        const onMove = (ev) => {
+          const delta = startY - ev.clientY;
+          const stepChange = Math.round(delta / 12);
+          setValue(initialVal + stepChange);
+        };
+
+        const onUp = (ev) => {
+          dial.releasePointerCapture(ev.pointerId);
+          dial.removeEventListener('pointermove', onMove);
+          dial.removeEventListener('pointerup', onUp);
+        };
+
+        dial.addEventListener('pointermove', onMove);
+        dial.addEventListener('pointerup', onUp);
+      });
+    }
+
+    // Gestão de envio e tabela
+    const descInput = document.getElementById('desc-input');
+    const btnSubmit = document.getElementById('btn-submit');
+    const btnText = document.getElementById('btn-text');
+    const tableBody = document.getElementById('table-body');
+    const totalDisplay = document.getElementById('total-val');
+
+    // 2. Função que renderiza a tabela mantendo os dados persistidos
+    function renderSavedTable() {
+      if (!tableBody) return;
+      tableBody.innerHTML = '';
+
+      if (records.length === 0) {
+        tableBody.innerHTML = `
+          <tr id="empty-state">
+            <td colspan="3" class="empty-row">Nenhum registo inserido nesta sessão.</td>
+          </tr>
+        `;
+        if (totalDisplay) totalDisplay.textContent = '0 €';
+        return;
+      }
+
+      records.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color: var(--text-muted);">${item.time}</td>
+          <td>${item.desc}</td>
+          <td class="val-col"><b>${item.val} €</b></td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      const total = records.reduce((acc, cur) => acc + cur.val, 0);
+      if (totalDisplay) totalDisplay.textContent = `${total} €`;
+    }
+
+    async function addRecord() {
+      const desc = descInput.value.trim() || 'Sem descrição';
+      const val = currentValue;
+
+      if (btnSubmit) btnSubmit.disabled = true;
+      if (btnText) btnText.textContent = 'A guardar...';
+
+      // Envio assíncrono para o Google Sheets
+      if (SCRIPT_URL) {
+        const formData = new URLSearchParams();
+        formData.append('descricao', desc);
+        formData.append('valor', val);
+
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData.toString()
+        }).catch(err => console.error('Erro de rede:', err));
+      }
+
+      // Guarda localmente com hora atual
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      records.unshift({ time: timeStr, desc: desc, val: val });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+      // Atualiza a tabela na tela
+      renderSavedTable();
+
+      // Reset do formulário
+      descInput.value = '';
+      if (btnSubmit) btnSubmit.disabled = false;
+      if (btnText) btnText.textContent = 'Adicionar Registo';
+      descInput.focus();
+    }
+
+    if (btnSubmit) btnSubmit.addEventListener('click', addRecord);
+    if (descInput) {
+      descInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addRecord();
+      });
+    }
+
+    // Inicialização da página
+    setValue(currentValue);
+    renderSavedTable();
+  </script>
+
+</body>
+</html>
