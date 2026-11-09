@@ -314,7 +314,7 @@
       background: oklch(18% 0 0);
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
-      padding: 15px 52px 15px 16px; /* espaço extra à direita para o botão */
+      padding: 15px 52px 15px 16px;
       color: var(--text-main);
       font-size: 16px;
       outline: none;
@@ -360,7 +360,7 @@
       fill: none;
     }
 
-    /* Miniatura do comprovativo anexado */
+    /* Miniatura do comprovativo */
     .photo-preview-bar {
       display: none;
       width: 100%;
@@ -570,7 +570,6 @@
         <div class="input-with-button">
           <input type="text" id="desc-input" placeholder="ex: Abastecimento" autocomplete="off" enterkeyhint="done">
           
-          <!-- Botão da Câmara -->
           <button type="button" class="camera-trigger" id="btn-camera" title="Tirar foto da fatura">
             <svg viewBox="0 0 24 24">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -578,7 +577,6 @@
             </svg>
           </button>
           
-          <!-- Input oculto para ativação de câmara nativa -->
           <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
         </div>
       </div>
@@ -627,7 +625,7 @@
     const MIN_VAL = 0.00;
     const MAX_VAL = 999.95;
     let editingId = null;
-    let currentPhotoBase64 = ''; // Contém o JPEG comprimido se anexado
+    let currentPhotoBase64 = '';
 
     let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
@@ -645,7 +643,6 @@
     const wrapC1 = document.getElementById('reel-c1');
     const wrapC2 = document.getElementById('reel-c2');
 
-    // Elementos da câmara
     const btnCamera = document.getElementById('btn-camera');
     const cameraInput = document.getElementById('camera-input');
     const photoPreviewBar = document.getElementById('photo-preview-bar');
@@ -656,7 +653,7 @@
       cameraInput.click();
     });
 
-    // Compressão automática no browser (Canvas) para evitar tráfego pesado
+    // Compressão para 800px max a 0.65 de qualidade (peso reduzido para ~45KB)
     cameraInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -666,20 +663,19 @@
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1000;
-          const MAX_HEIGHT = 1000;
+          const MAX_SIZE = 800;
           let width = img.width;
           let height = img.height;
 
           if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
             }
           } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
             }
           }
 
@@ -688,9 +684,7 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Gera JPEG leve (qualidade 0.75 ~ 80KB)
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.75);
-          
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.65);
           photoThumb.src = currentPhotoBase64;
           photoPreviewBar.classList.add('active');
           btnCamera.classList.add('has-photo');
@@ -916,63 +910,47 @@
       btnSubmit.disabled = true;
       btnText.textContent = photoPayload ? 'A enviar foto...' : 'A processar...';
 
+      const payload = {
+        descricao: desc,
+        valor: val,
+        foto: photoPayload
+      };
+
       if (editingId) {
-        const targetId = editingId;
+        payload.action = 'edit';
+        payload.id = editingId;
+      } else {
+        payload.action = 'create';
+        payload.id = 'id_' + Date.now();
+      }
 
-        if (SCRIPT_URL) {
-          const formData = new URLSearchParams();
-          formData.append('action', 'edit');
-          formData.append('id', targetId);
-          formData.append('descricao', desc);
-          formData.append('valor', val);
-          if (photoPayload) {
-            formData.append('foto', photoPayload);
-          }
+      // Envio via JSON em text/plain para preservar a integridade do Base64
+      if (SCRIPT_URL) {
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        }).catch(err => console.error('Erro de envio:', err));
+      }
 
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString()
-          }).catch(err => console.error('Erro na edição:', err));
-        }
-
-        const item = records.find(r => r.id === targetId);
+      if (editingId) {
+        const item = records.find(r => r.id === editingId);
         if (item) {
           item.desc = desc;
           item.val = val;
+          if (photoPayload) item.photoUrl = photoPayload;
         }
-
         cancelEditing();
       } else {
-        const newId = 'id_' + Date.now();
-
-        if (SCRIPT_URL) {
-          const formData = new URLSearchParams();
-          formData.append('action', 'create');
-          formData.append('id', newId);
-          formData.append('descricao', desc);
-          formData.append('valor', val);
-          if (photoPayload) {
-            formData.append('foto', photoPayload);
-          }
-
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString()
-          }).catch(err => console.error('Erro no envio:', err));
-        }
-
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         records.unshift({ 
-          id: newId, 
+          id: payload.id, 
           time: timeStr, 
           desc: desc, 
           val: val, 
-          photoUrl: photoPayload ? '#' : '' // indicador local
+          photoUrl: photoPayload ? photoPayload : '' 
         });
 
         descInput.value = '';
